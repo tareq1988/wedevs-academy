@@ -1,0 +1,20 @@
+{
+    "name": "tareq1988/wedevs-academy",
+    "description": "A tutorial plugin for weDevs Academy",
+    "type": "wordpress-plugin",
+    "license": "GPLv2",
+    "authors": [
+        {
+            "name": "Tareq Hasan",
+            "email": "tareq1988@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "WeDevs\\Academy\\": "includes/"
+        },
+        "files": []
+    }
+}
