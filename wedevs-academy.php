@@ -88,13 +88,8 @@ final class WeDevs_Academy {
      * @return void
      */
     public function activate() {
-        $installed = get_option( 'wd_academy_installed' );
-
-        if ( ! $installed ) {
-            update_option( 'wd_academy_installed', time() );
-        }
-
-        update_option( 'wd_academy_version', WD_ACADEMY_VERSION );
+        $installer = new WeDevs\Academy\Installer();
+        $installer->run();
     }
 }
 

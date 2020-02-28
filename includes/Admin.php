@@ -11,9 +11,11 @@ class Admin {
      * Initialize the class
      */
     function __construct() {
-        $this->dispatch_actions();
+        $addressbook = new Admin\Addressbook();
 
-        new Admin\Menu();
+        $this->dispatch_actions( $addressbook );
+
+        new Admin\Menu( $addressbook );
     }
 
     /**
@@ -21,9 +23,7 @@ class Admin {
      *
      * @return void
      */
-    public function dispatch_actions() {
-        $addressbook = new Admin\Addressbook();
-
+    public function dispatch_actions( $addressbook ) {
         add_action( 'admin_init', [ $addressbook, 'form_handler' ] );
     }
 }
