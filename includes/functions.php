@@ -24,23 +24,47 @@ function wd_ac_insert_address( $args = [] ) {
 
     $data = wp_parse_args( $args, $defaults );
 
-    $inserted = $wpdb->insert(
-        $wpdb->prefix . 'ac_addresses',
-        $data,
-        [
-            '%s',
-            '%s',
-            '%s',
-            '%d',
-            '%s'
-        ]
-    );
+    if ( isset( $data['id'] ) ) {
 
-    if ( ! $inserted ) {
-        return new \WP_Error( 'failed-to-insert', __( 'Failed to insert data', 'wedevs-academy' ) );
+        $id = $data['id'];
+        unset( $data['id'] );
+
+        $updated = $wpdb->update(
+            $wpdb->prefix . 'ac_addresses',
+            $data,
+            [ 'id' => $id ],
+            [
+                '%s',
+                '%s',
+                '%s',
+                '%d',
+                '%s'
+            ],
+            [ '%d' ]
+        );
+
+        return $updated;
+
+    } else {
+
+        $inserted = $wpdb->insert(
+            $wpdb->prefix . 'ac_addresses',
+            $data,
+            [
+                '%s',
+                '%s',
+                '%s',
+                '%d',
+                '%s'
+            ]
+        );
+
+        if ( ! $inserted ) {
+            return new \WP_Error( 'failed-to-insert', __( 'Failed to insert data', 'wedevs-academy' ) );
+        }
+
+        return $wpdb->insert_id;
     }
-
-    return $wpdb->insert_id;
 }
 
 /**
@@ -85,3 +109,34 @@ function wd_ac_address_count() {
     return (int) $wpdb->get_var( "SELECT count(id) FROM {$wpdb->prefix}ac_addresses" );
 }
 
+/**
+ * Fetch a single contact from the DB
+ *
+ * @param  int $id
+ *
+ * @return object
+ */
+function wd_ac_get_address( $id ) {
+    global $wpdb;
+
+    return $wpdb->get_row(
+        $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ac_addresses WHERE id = %d", $id )
+    );
+}
+
+/**
+ * Delete an address
+ *
+ * @param  int $id
+ *
+ * @return int|boolean
+ */
+function wd_ac_delete_address( $id ) {
+    global $wpdb;
+
+    return $wpdb->delete(
+        $wpdb->prefix . 'ac_addresses',
+        [ 'id' => $id ],
+        [ '%d' ]
+    );
+}

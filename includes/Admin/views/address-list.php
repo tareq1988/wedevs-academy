@@ -3,6 +3,17 @@
 
     <a href="<?php echo admin_url( 'admin.php?page=wedevs-academy&action=new' ); ?>" class="page-title-action"><?php _e( 'Add New', 'wedevs-academy' ); ?></a>
 
+    <?php if ( isset( $_GET['inserted'] ) ) { ?>
+        <div class="notice notice-success">
+            <p><?php _e( 'Address has been added successfully!', 'wedevs-academy' ); ?></p>
+        </div>
+    <?php } ?>
+
+    <?php if ( isset( $_GET['address-deleted'] ) && $_GET['address-deleted'] == 'true' ) { ?>
+        <div class="notice notice-success">
+            <p><?php _e( 'Address has been deleted successfully!', 'wedevs-academy' ); ?></p>
+        </div>
+    <?php } ?>
 
     <form action="" method="post">
         <?php
