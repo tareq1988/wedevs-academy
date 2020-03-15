@@ -76,6 +76,10 @@ final class WeDevs_Academy {
 
         new WeDevs\Academy\Assets();
 
+        if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+            new WeDevs\Academy\Ajax();
+        }
+
         if ( is_admin() ) {
             new WeDevs\Academy\Admin();
         } else {
