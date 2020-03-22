@@ -11,3 +11,4 @@ A demo plugin for WordPress tutorial for weDevs Academy.
 - [Class 5](https://github.com/tareq1988/wedevs-academy/tree/class-5)
 - [Class 6](https://github.com/tareq1988/wedevs-academy/tree/class-6)
 - [Class 7](https://github.com/tareq1988/wedevs-academy/tree/class-7)
+- [Class 9](https://github.com/tareq1988/wedevs-academy/tree/class-9)
