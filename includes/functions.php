@@ -43,6 +43,8 @@ function wd_ac_insert_address( $args = [] ) {
             [ '%d' ]
         );
 
+        wd_ac_address_purge_cache( $id );
+
         return $updated;
 
     } else {
@@ -62,6 +64,8 @@ function wd_ac_insert_address( $args = [] ) {
         if ( ! $inserted ) {
             return new \WP_Error( 'failed-to-insert', __( 'Failed to insert data', 'wedevs-academy' ) );
         }
+
+        wd_ac_address_purge_cache();
 
         return $wpdb->insert_id;
     }
@@ -86,6 +90,10 @@ function wd_ac_get_addresses( $args = [] ) {
 
     $args = wp_parse_args( $args, $defaults );
 
+    $last_changed = wp_cache_get_last_changed( 'address' );
+    $key          = md5( serialize( array_diff_assoc( $args, $defaults ) ) );
+    $cache_key    = "all:$key:$last_changed";
+
     $sql = $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}ac_addresses
             ORDER BY {$args['orderby']} {$args['order']}
@@ -93,7 +101,13 @@ function wd_ac_get_addresses( $args = [] ) {
             $args['offset'], $args['number']
     );
 
-    $items = $wpdb->get_results( $sql );
+    $items = wp_cache_get( $cache_key, 'address' );
+
+    if ( false === $items ) {
+        $items = $wpdb->get_results( $sql );
+
+        wp_cache_set( $cache_key, $items, 'address' );
+    }
 
     return $items;
 }
@@ -106,7 +120,15 @@ function wd_ac_get_addresses( $args = [] ) {
 function wd_ac_address_count() {
     global $wpdb;
 
-    return (int) $wpdb->get_var( "SELECT count(id) FROM {$wpdb->prefix}ac_addresses" );
+    $count = wp_cache_get( 'count', 'address' );
+
+    if ( false === $count ) {
+        $count = (int) $wpdb->get_var( "SELECT count(id) FROM {$wpdb->prefix}ac_addresses" );
+
+        wp_cache_set( 'count', $count, 'address' );
+    }
+
+    return $count;
 }
 
 /**
@@ -119,9 +141,17 @@ function wd_ac_address_count() {
 function wd_ac_get_address( $id ) {
     global $wpdb;
 
-    return $wpdb->get_row(
-        $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ac_addresses WHERE id = %d", $id )
-    );
+    $address = wp_cache_get( 'book-' . $id, 'address' );
+
+    if ( false === $address ) {
+        $address = $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ac_addresses WHERE id = %d", $id )
+        );
+
+        wp_cache_set( 'book-' . $id, $address, 'address' );
+    }
+
+    return $address;
 }
 
 /**
@@ -134,9 +164,29 @@ function wd_ac_get_address( $id ) {
 function wd_ac_delete_address( $id ) {
     global $wpdb;
 
+    wd_ac_address_purge_cache( $id );
+
     return $wpdb->delete(
         $wpdb->prefix . 'ac_addresses',
         [ 'id' => $id ],
         [ '%d' ]
     );
+}
+
+/**
+ * Purge the cache for books
+ *
+ * @param  int $book_id
+ *
+ * @return void
+ */
+function wd_ac_address_purge_cache( $book_id = null ) {
+    $group = 'address';
+
+    if ( $book_id ) {
+        wp_cache_delete( 'book-' . $book_id, $group );
+    }
+
+    wp_cache_delete( 'count', $group );
+    wp_cache_set( 'last_changed', microtime(), $group );
 }
