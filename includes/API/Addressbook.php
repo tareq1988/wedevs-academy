@@ -35,6 +35,12 @@ class Addressbook extends WP_REST_Controller {
                     'permission_callback' => [ $this, 'get_items_permissions_check' ],
                     'args'                => $this->get_collection_params(),
                 ],
+                [
+                    'methods'             => WP_REST_Server::CREATABLE,
+                    'callback'            => [ $this, 'create_item' ],
+                    'permission_callback' => [ $this, 'create_item_permissions_check' ],
+                    'args'                => $this->get_endpoint_args_for_item_schema( WP_REST_Server::CREATABLE ),
+                ],
                 'schema' => [ $this, 'get_item_schema' ],
             ]
         );
@@ -56,6 +62,12 @@ class Addressbook extends WP_REST_Controller {
                     'args'                => [
                         'context' => $this->get_context_param( [ 'default' => 'view' ] ),
                     ],
+                ],
+                [
+                    'methods'             => WP_REST_Server::EDITABLE,
+                    'callback'            => [ $this, 'update_item' ],
+                    'permission_callback' => [ $this, 'update_item_permissions_check' ],
+                    'args'                => $this->get_endpoint_args_for_item_schema( WP_REST_Server::EDITABLE ),
                 ],
                 [
                     'methods'             => WP_REST_Server::DELETABLE,
@@ -185,6 +197,88 @@ class Addressbook extends WP_REST_Controller {
     }
 
     /**
+     * Checks if a given request has access to create items.
+     *
+     * @param WP_REST_Request $request
+     *
+     * @return WP_Error|bool
+     */
+    public function create_item_permissions_check( $request ) {
+        return $this->get_items_permissions_check( $request );
+    }
+
+    /**
+     * Creates one item from the collection.
+     *
+     * @param \WP_REST_Request $request
+     *
+     * @return \WP_Error|WP_REST_Response
+     */
+    public function create_item( $request ) {
+        $contact = $this->prepare_item_for_database( $request );
+
+        if ( is_wp_error( $contact ) ) {
+            return $contact;
+        }
+
+        $contact_id = wd_ac_insert_address( $contact );
+
+        if ( is_wp_error( $contact_id ) ) {
+            $contact_id->add_data( [ 'status' => 400 ] );
+
+            return $contact_id;
+        }
+
+        $contact = $this->get_contact( $contact_id );
+        $response = $this->prepare_item_for_response( $contact, $request );
+
+        $response->set_status( 201 );
+        $response->header( 'Location', rest_url( sprintf( '%s/%s/%d', $this->namespace, $this->rest_base, $contact_id ) ) );
+
+        return rest_ensure_response( $response );
+    }
+
+    /**
+     * Checks if a given request has access to update a specific item.
+     *
+     * @param \WP_REST_Request $request Full data about the request.
+     *
+     * @return \WP_Error|bool
+     */
+    public function update_item_permissions_check( $request ) {
+        return $this->get_item_permissions_check( $request );
+    }
+
+    /**
+     * Updates one item from the collection.
+     *
+     * @param \WP_REST_Request $request
+     *
+     * @return \WP_Error|\WP_REST_Response
+     */
+    public function update_item( $request ) {
+        $contact  = $this->get_contact( $request['id'] );
+        $prepared = $this->prepare_item_for_database( $request );
+
+        $prepared = array_merge( (array) $contact, $prepared );
+
+        $updated = wd_ac_insert_address( $prepared );
+
+        if ( ! $updated ) {
+            return new WP_Error(
+                'rest_not_updated',
+                __( 'Sorry, the address could not be updated.' ),
+                [ 'status' => 400 ]
+            );
+        }
+
+        $contact  = $this->get_contact( $request['id'] );
+        $response = $this->prepare_item_for_response( $contact, $request );
+
+        return rest_ensure_response( $response );
+    }
+
+    /**
      * Checks if a given request has access to delete a specific item.
      *
      * @param \WP_REST_Request $request
@@ -224,6 +318,31 @@ class Addressbook extends WP_REST_Controller {
         $response = rest_ensure_response( $data );
 
         return $data;
+    }
+
+    /**
+     * Prepares one item for create or update operation.
+     *
+     * @param \WP_REST_Request $request
+     *
+     * @return \WP_Error|object
+     */
+    protected function prepare_item_for_database( $request ) {
+        $prepared = [];
+
+        if ( isset( $request['name'] ) ) {
+            $prepared['name'] = $request['name'];
+        }
+
+        if ( isset( $request['address'] ) ) {
+            $prepared['address'] = $request['address'];
+        }
+
+        if ( isset( $request['phone'] ) ) {
+            $prepared['phone'] = $request['phone'];
+        }
+
+        return $prepared;
     }
 
     /**
